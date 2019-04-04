@@ -1,0 +1,7 @@
+# Trajectory Lookup
+# Requests all waypoints associated with a trajectory name
+
+string trajectory_name
+---
+bool success
+CombinedJointPoint[] waypoints
