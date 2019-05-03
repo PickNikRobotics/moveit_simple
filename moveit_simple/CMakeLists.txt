@@ -64,6 +64,7 @@ add_library(${PROJECT_NAME}
   src/point_types.cpp
   src/robot.cpp
   src/trajectory_planner.cpp
+  src/taylor_trajectory_planner.cpp
   src/conversions.cpp
 )
 

@@ -22,6 +22,7 @@
 #include <moveit_simple/conversions.h>
 #include <moveit_simple/robot.h>
 #include <moveit_simple/joint_locker.h>
+#include <moveit_simple/trajectory_tolerance.h>
 
 namespace moveit_simple {
 
@@ -29,7 +30,7 @@ void TrajectoryPlanner::addTrajPoint(const std::string& traj_name, std::unique_p
                          const InterpolationType& type, const unsigned int num_steps)
 {
   std::lock_guard<std::recursive_mutex> guard(trajectory_info_map_mutex_);
-  traj_info_map_[traj_name].push_back({ std::move(point), type, num_steps });
+  traj_info_map_[traj_name].push_back({ std::move(point), type, num_steps, TrajectoryTolerance() });
 }
 
 void TrajectoryPlanner::clearTrajectory(const std::string& traj_name)

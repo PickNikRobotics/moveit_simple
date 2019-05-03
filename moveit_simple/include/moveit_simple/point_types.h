@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <moveit_simple/joint_lock_options.h>
+#include <moveit_simple/trajectory_tolerance.h>
 #include <eigen3/Eigen/Geometry>
 
 namespace moveit_simple
@@ -53,6 +54,7 @@ struct TrajectoryPointInfo
   std::unique_ptr<TrajectoryPoint> point;
   InterpolationType type;
   unsigned int num_steps;
+  TrajectoryTolerance trajectory_tolerance;
 };
 
 typedef std::vector<TrajectoryPointInfo> TrajectoryInfo;
@@ -108,8 +110,6 @@ protected:
 };
 
 
-
-
 class JointTrajectoryPoint : public TrajectoryPoint
 {
 public:
@@ -163,6 +163,7 @@ protected:
 private:
   Eigen::Isometry3d pose_;
 };
+
 
 class CombinedTrajectoryPoint : public TrajectoryPoint
 {

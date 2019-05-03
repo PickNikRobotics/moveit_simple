@@ -57,7 +57,7 @@ public:
   */
   ~TrajectoryPlanner(){}
 
-  void addTrajPoint(const std::string &traj_name, std::unique_ptr<TrajectoryPoint> &point,
+  virtual void addTrajPoint(const std::string &traj_name, std::unique_ptr<TrajectoryPoint> &point,
     const InterpolationType &type = interpolation_type::JOINT,
     const unsigned int num_steps = 0);
 
@@ -78,9 +78,8 @@ public:
    * @throws <moveit_simple::CollisionDetected> (One of interpolated point is
    * in Collision with itself or environment)
    */
-  std::vector<moveit_simple::JointTrajectoryPoint> plan(
-    Robot& robot,
-    const std::string traj_name, bool collision_check = false);
+  virtual std::vector<moveit_simple::JointTrajectoryPoint> plan(
+    Robot& robot, const std::string traj_name, bool collision_check = false);
 
   /**
    * @brief  jointInterpolation - joint Interpolation from last added point to
@@ -93,9 +92,8 @@ public:
    * @param collision_check - bool to turn check for collision on\off
    * @return true if all the points including traj_point are added to the points.
    */
-  bool jointInterpolation(
-    Robot& robot,
-    const std::unique_ptr<TrajectoryPoint> &traj_point,
+  virtual bool jointInterpolation(
+    Robot& robot, const std::unique_ptr<TrajectoryPoint> &traj_point,
     std::vector<trajectory_msgs::JointTrajectoryPoint> &points, const unsigned int num_steps,
     bool collision_check = false);
 
@@ -109,22 +107,22 @@ public:
    * @param collision_check - bool to turn check for collision on\off
    * @return true if all the points including traj_point are added to the points.
    */
-  bool cartesianInterpolation(Robot& robot,
+  virtual bool cartesianInterpolation(Robot& robot,
     const std::unique_ptr<TrajectoryPoint> &traj_point,
     std::vector<trajectory_msgs::JointTrajectoryPoint> &points, const unsigned int num_steps,
     bool collision_check = false);
 
 
-  bool toJointTrajectory(
-    Robot& robot,
-    const std::string traj_name,
+  virtual bool toJointTrajectory(
+    Robot& robot, const std::string traj_name,
     std::vector<trajectory_msgs::JointTrajectoryPoint> &points,
     bool collision_check = false);
 
-
+protected:
   // Trajectory storage
-  std::map<std::string, TrajectoryInfo> traj_info_map_;
   mutable std::recursive_mutex trajectory_info_map_mutex_;
+  std::map<std::string, TrajectoryInfo> traj_info_map_;
+
 private:
 
 };
