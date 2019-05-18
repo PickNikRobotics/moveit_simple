@@ -20,37 +20,122 @@
 
 #include <moveit_simple/moveit_simple.h>
 #include <moveit_simple/prettyprint.hpp>
+#include <moveit_simple/online_robot.h>
+#include <moveit_simple/point_types.h>
 
+namespace moveit_simple
+{
+class RobotDemo : OnlineRobot
+{
+public:
+  RobotDemo()
+    : OnlineRobot(ros::NodeHandle(), "robot_description", "manipulator")
+  {}
+
+  void initializeExamplePickPlace()
+  {
+    // init pick pose
+    Eigen::Isometry3d pick_pose(Eigen::Translation3d(Eigen::Vector3d(1.5, 0, 1)));
+    pick_pose.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitY()));
+
+    // init place pose
+    Eigen::Isometry3d place_pose = pick_pose;
+
+    // set robot end effector symmetry to circular
+
+    setEndEffectorSymmetry(moveit_simple::EndEffectorSymmetry::Circular);
+
+    // compute pick/place pose
+    std::vector<double> seed, pick_state, place_state;
+    bool success = getPickPlaceJointSolutions(pick_pose, place_pose, 1.0, seed, pick_state, place_state);
+
+
+    std::unique_ptr<moveit_simple::TrajectoryPoint> pick_point1 =
+       std::unique_ptr<moveit_simple::TrajectoryPoint>
+       (new moveit_simple::JointTrajectoryPoint(pick_state, 2.0, "pick_point1"));
+
+    std::unique_ptr<moveit_simple::TrajectoryPoint> place_point1 =
+       std::unique_ptr<moveit_simple::TrajectoryPoint>
+       (new moveit_simple::JointTrajectoryPoint(place_state, 2.0, "place_point2"));
+
+
+
+    // move place pose and compute pick/place
+    place_pose *= Eigen::Translation3d(Eigen::Vector3d(0, 0.2, 0));
+    getPickPlaceJointSolutions(pick_pose, place_pose, 1.0, seed, pick_state, place_state);
+
+    std::unique_ptr<moveit_simple::TrajectoryPoint> pick_point2 =
+       std::unique_ptr<moveit_simple::TrajectoryPoint>
+       (new moveit_simple::JointTrajectoryPoint(pick_state, 10.0, "pick_point2"));
+
+    std::unique_ptr<moveit_simple::TrajectoryPoint> place_point2 =
+       std::unique_ptr<moveit_simple::TrajectoryPoint>
+       (new moveit_simple::JointTrajectoryPoint(place_state, 10.0, "place_point2"));
+
+    // rotate place pose and compute pick/place
+    place_pose *= Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX());
+    getPickPlaceJointSolutions(pick_pose, place_pose, 1.0, seed, pick_state, place_state);
+
+
+    std::unique_ptr<moveit_simple::TrajectoryPoint> pick_point3 =
+       std::unique_ptr<moveit_simple::TrajectoryPoint>
+       (new moveit_simple::JointTrajectoryPoint(pick_state, 10.0, "pick_point3"));
+
+    std::unique_ptr<moveit_simple::TrajectoryPoint> place_point3 =
+       std::unique_ptr<moveit_simple::TrajectoryPoint>
+       (new moveit_simple::JointTrajectoryPoint(place_state, 10.0, "place_point3"));
+
+
+    ROS_INFO_STREAM("Adding pick and place to a trajectory and executing");
+    int time = 10;
+    int time_inc = 10;
+    addTrajPoint(pick_place_trajectory_name, "home",      time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, pick_point1, joint, time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, place_point1, joint, time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, "home",      time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, pick_point2, joint, time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, place_point2, joint, time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, "home",      time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, pick_point3, joint, time);
+    time += time_inc;
+    addTrajPoint(pick_place_trajectory_name, place_point3, joint, time);
+    time += time_inc;
+    pick_place_trajectory_initialized = true;
+  }
+
+  void executeExamplePickPlace()
+  {
+    if (!pick_place_trajectory_initialized)
+      execute(pick_place_trajectory_name);
+  }
+
+  std::unique_ptr<moveit_simple::OnlineRobot> robot;
+  moveit_simple::InterpolationType cart = moveit_simple::interpolation_type::CARTESIAN;
+  moveit_simple::InterpolationType joint = moveit_simple::interpolation_type::JOINT;
+  std::string pick_place_trajectory_name = "pick_place_trajectory_example";
+  bool pick_place_trajectory_initialized = false;
+};
+}
 
 int main(int argc, char **argv)
 {
+
   std::string name = "bin_pick_server_main";
   ros::init(argc, argv, name);
 
+  moveit_simple::RobotDemo demo;
+  demo.initializeExamplePickPlace();
+  demo.executeExamplePickPlace();
   ros::AsyncSpinner spinner(4);
   spinner.start();
-
-  auto robot = std::unique_ptr<moveit_simple::OnlineRobot> (new moveit_simple::OnlineRobot
-                    (ros::NodeHandle(), "robot_description", "manipulator"));
-
-  const std::string trajectory_name("traj1");
-  const Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
-  const moveit_simple::InterpolationType cart = moveit_simple::interpolation_type::CARTESIAN;
-  const moveit_simple::InterpolationType joint = moveit_simple::interpolation_type::JOINT;
-
-  robot->addTrajPoint(trajectory_name, "home",      0.5);
-  robot->addTrajPoint(trajectory_name, "waypoint1", 1.0, joint, 5);
-  robot->addTrajPoint(trajectory_name, "tf_pub1",   2.0, cart, 8);
-  robot->addTrajPoint(trajectory_name, "waypoint2", 3.0);
-  robot->addTrajPoint(trajectory_name, "waypoint3", 4.0, joint);
-  robot->addTrajPoint(trajectory_name, "waypoint1", 4.0, joint);
-  robot->addTrajPoint(trajectory_name, "waypoint3", 4.0, cart);
-  robot->addTrajPoint(trajectory_name, "waypoint1", 4.0, cart);
-  robot->addTrajPoint(trajectory_name, pose, "tool0", 5.0);
-
-  robot->execute(trajectory_name);
-
   ros::waitForShutdown();
-  return 0;
 
+  return 0;
 }
